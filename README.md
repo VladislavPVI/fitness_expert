@@ -6,6 +6,10 @@ A new Flutter project.
 ------------ | ------------- | ------------- 
 Menu | Training plans | Exercises
 
+<img src="https://github.com/VladislavPVI/fitness_expert/blob/master/sc/4.png" width="270" height="555" /> | <img src="https://github.com/VladislavPVI/fitness_expert/blob/master/sc/5.png" width="270" height="555" />
+------------ | ------------- 
+New Plan | New Exercise
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
