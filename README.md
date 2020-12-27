@@ -1,6 +1,10 @@
-# fit_master
+# FITNESS EXPERT
 
 A new Flutter project.
+
+<img src="https://github.com/VladislavPVI/fitness_expert/blob/master/sc/1.png" width="270" height="555" /> | <img src="https://github.com/VladislavPVI/fitness_expert/blob/master/sc/2.png" width="270" height="555" />
+------------ | ------------- 
+Menu | Training plans
 
 ## Getting Started
 
