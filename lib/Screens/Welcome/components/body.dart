@@ -1,7 +1,5 @@
 import 'package:fit_master/Screens/Welcome/components/background.dart';
-import 'package:fit_master/Screens/editors/workouts_db.dart';
 import 'package:fit_master/Screens/trainingplan/trainings_screen.dart';
-import 'package:fit_master/Screens/editors/exercises_db.dart';
 import 'package:flutter/material.dart';
 
 class Body extends StatelessWidget {
@@ -18,7 +16,7 @@ class Body extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 45),
                 textAlign: TextAlign.center),
             Image.asset('assets/images/back.png', height: size.height * 0.45),
-            RaisedButton(
+            MaterialButton(
               color: Color(0xFF035AA6),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(22.0),
@@ -31,42 +29,6 @@ class Body extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) {
                       return TrainingScreen();
-                    },
-                  ),
-                );
-              },
-            ),
-            RaisedButton(
-              color: Color(0xFF035AA6),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22.0),
-                  side: BorderSide(color: Colors.red[900])),
-              child: const Text('Create own plan',
-                  style: TextStyle(fontSize: 25, color: Colors.white)),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return WorkoutsDB();
-                    },
-                  ),
-                );
-              },
-            ),
-            RaisedButton(
-              color: Color(0xFF035AA6),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22.0),
-                  side: BorderSide(color: Colors.red[900])),
-              child: const Text('Create own exercise',
-                  style: TextStyle(fontSize: 25, color: Colors.white)),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return ExercisesDB();
                     },
                   ),
                 );

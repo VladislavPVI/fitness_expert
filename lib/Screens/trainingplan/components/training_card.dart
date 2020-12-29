@@ -7,11 +7,13 @@ class WorkoutCard extends StatelessWidget {
     this.itemIndex,
     this.workout,
     this.press,
+    this.token
   }) : super(key: key);
 
   final int itemIndex;
   final Workout workout;
   final Function press;
+  final String token;
 
   @override
   Widget build(BuildContext context) {
@@ -52,10 +54,17 @@ class WorkoutCard extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 20.0),
                   height: 130,
                   width: 200,
-                  child: Image.asset(
+                  child: workout.imageURL!=null ? Image.network(
+                    'http://192.168.31.119:3000/app/rest/v2/files/'+workout.imageURL,
+                    fit: BoxFit.cover,
+                    headers: {"Authorization": 'Bearer ' + token})
+                   : Image.asset(
                     workout.image,
                     fit: BoxFit.cover,
                   ),
+
+
+
                 ),
               ),
             ),

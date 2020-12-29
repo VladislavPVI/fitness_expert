@@ -1,9 +1,18 @@
 import 'package:fit_master/domain/Exercise.dart';
 
-class ExerciseTime extends Exercise {
-  final int time;
+class ExerciseTime {
+  int time, id, type;
+  String imageURL, title, description, image;
 
-  ExerciseTime(String image, String title, String description, int id, int type,
-      this.time)
-      : super(image, title, description, id, type);
+  ExerciseTime(this.image, this.title, this.description, this.id, this.type,
+      this.time);
+
+  ExerciseTime.fromMapCuba(Map<String, dynamic> map) {
+    id = int.parse(map['exercise']['id']);
+    time = map['time'];
+    imageURL = map['exercise']['image']['id'];
+    title = map['exercise']['title'];
+    description = map['exercise']['description'];
+    type = map['exercise']['type'];
+  }
 }

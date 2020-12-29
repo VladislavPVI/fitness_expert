@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 
 class ExercisesScreen extends StatelessWidget {
   final Workout workout;
+  final String token;
 
-  const ExercisesScreen({Key key, this.workout}) : super(key: key);
+  const ExercisesScreen({Key key, this.workout, this.token}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF035AA6),
-      body: Body(workout: workout),
+      body: Body(workout: workout, token: token),
     );
   }
 }

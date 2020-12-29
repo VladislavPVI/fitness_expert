@@ -1,7 +1,7 @@
-import 'package:fit_master/Screens/editors/exercises_db.dart';
 import 'package:flutter/material.dart';
 
 import 'Screens/Welcome/welcome_screen.dart';
+import 'Screens/login/body.dart';
 
 void main() {
   runApp(MyApp());
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: WelcomeScreen(),
+      home: MyHomePage(title: 'Flutter Login'),
     );
   }
 }

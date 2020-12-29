@@ -6,12 +6,13 @@ import 'package:flutter/material.dart';
 
 class Body extends StatefulWidget {
   final Workout workout;
+  final String token;
 
-  Body({Key key, this.workout}) : super(key: key);
+  Body({Key key, this.workout, this.token}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return _DBTestPageState(workout);
+    return _DBTestPageState(workout, token);
   }
 }
 
@@ -19,8 +20,9 @@ class _DBTestPageState extends State<Body> {
   var dbHelper;
   Future<List<ExerciseTime>> exercises;
   final Workout workout;
+  final String token;
 
-  _DBTestPageState(this.workout);
+  _DBTestPageState(this.workout, this.token);
 
   @override
   void initState() {
@@ -55,6 +57,7 @@ class _DBTestPageState extends State<Body> {
           itemBuilder: (context, index) => ExerciseCard(
             itemIndex: index,
             exercise: exercises[index],
+            token: token
           ),
         )
       ],

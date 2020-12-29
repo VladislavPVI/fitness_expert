@@ -19,6 +19,7 @@ class Body extends StatefulWidget {
 class _DBTestPageState extends State<Body> {
   var dbHelper;
   Future<List<Workout>> workouts;
+  String token;
 
   @override
   void initState() {
@@ -27,10 +28,11 @@ class _DBTestPageState extends State<Body> {
     refreshList();
   }
 
-  refreshList() {
+  refreshList() async {
     setState(() {
       workouts = dbHelper.getWorkouts();
     });
+    token = await dbHelper.storedRefreshToken;
   }
 
   Stack dataWorkouts(List<Workout> workouts) {
@@ -53,12 +55,14 @@ class _DBTestPageState extends State<Body> {
           itemBuilder: (context, index) => WorkoutCard(
             itemIndex: index,
             workout: workouts[index],
+            token: token,
             press: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ExercisesScreen(
                     workout: workouts[index],
+                      token: token
                   ),
                 ),
               );

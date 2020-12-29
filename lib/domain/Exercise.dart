@@ -21,4 +21,5 @@ class Exercise {
     image = map['image'];
     type = map['type'];
   }
+
 }

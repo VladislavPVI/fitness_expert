@@ -1,5 +1,5 @@
 class Workout {
-  String image, title, description;
+  String image, title, description, imageURL;
   int id, time, level;
 
   Workout(
@@ -22,6 +22,15 @@ class Workout {
     description = map['description'];
     time = map['time'];
     image = map['image'];
+    level = map['level'];
+  }
+
+  Workout.fromMapCuba(Map<String, dynamic> map) {
+    id = int.parse(map['id']);
+    title = map['title'];
+    description = map['description'];
+    time = map['time'];
+    imageURL = map['image']['id'];
     level = map['level'];
   }
 }

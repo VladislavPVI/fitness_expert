@@ -1,13 +1,18 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:convert';
 import 'package:fit_master/domain/Exercise.dart';
 import 'package:fit_master/domain/ExerciseTime.dart';
 import 'package:fit_master/domain/Workout.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:http/http.dart' as http;
+
+final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
 class DBHelper {
   static Database _db;
+  static String _storedRefreshToken;
   static const String ID = 'id';
   static const String TITLE = 'title';
   static const String TIME = 'time';
@@ -32,10 +37,23 @@ class DBHelper {
     return _db;
   }
 
+  Future<String> get storedRefreshToken async {
+    if (_storedRefreshToken != null) {
+      return _storedRefreshToken;
+    }
+    _storedRefreshToken = await initToken();
+    return _storedRefreshToken;
+  }
+
   initDb() async {
     String path = join(await getDatabasesPath(), DB_NAME);
     var db = await openDatabase(path, version: 1, onCreate: _onCreate);
     return db;
+  }
+
+  initToken() async {
+    String token = await secureStorage.read(key: 'access_token');
+    return token;
   }
 
   _onCreate(Database db, int version) async {
@@ -45,6 +63,21 @@ class DBHelper {
         "CREATE TABLE $TABLE_WORKOUT ($ID INTEGER PRIMARY KEY, $TIME INTEGER, $LEVEL INTEGER, $IMAGE TEXT, $TITLE TEXT, $DESCRIPTION TEXT)");
     await db.execute(
         "CREATE TABLE $WORKOUT_EXERCISE ($WORKOUT_ID INTEGER, $EXERCISE_ID INTEGER, $TIME INTEGER, PRIMARY KEY ($WORKOUT_ID, $EXERCISE_ID))");
+
+    String token = await storedRefreshToken;
+
+    if (token != null) {
+      try {
+        initDBfromCuba(db, token);
+      } catch (e) {
+        print(e);
+        initDBNoConnection(db);
+      }
+    } else
+      initDBNoConnection(db);
+  }
+
+  initDBNoConnection(Database db) async {
     Batch batch = db.batch();
     batch.insert(TABLE_EXERCISE, {
       'id': 1,
@@ -168,33 +201,53 @@ class DBHelper {
     await batch.commit(noResult: true);
   }
 
-  Future<Exercise> saveExercise(Exercise exercise) async {
-    var dbClient = await db;
-    exercise.id = await dbClient.insert(TABLE_EXERCISE, exercise.toMap());
-    return exercise;
-  }
+  initDBfromCuba(Database db, String token) async {
+    Batch batch = db.batch();
+    var res = await http.get(
+        'http://192.168.31.119:3000/app/rest/v2/entities/fitnessexpertback_Workout?view=workout-view',
+        headers: {"Authorization": 'Bearer ' + token});
+    var res2 = json.decode(res.body);
 
-  Future<Workout> saveWorkout(Workout workout) async {
-    var dbClient = await db;
-    workout.id = await dbClient.insert(TABLE_WORKOUT, workout.toMap());
-    int count = Sqflite.firstIntValue(
-        await dbClient.rawQuery('SELECT COUNT(*) FROM $TABLE_EXERCISE'));
-
-    Batch batch = dbClient.batch();
-
-    Random random = new Random();
-
-    List list = List.generate(count, (i) => i);
-    list.shuffle();
-
-    for (int i = 0; i < 5; i++) {
-      int exID = list[i] + 1;
-      int time = random.nextInt(40) + 10;
-      batch.insert(WORKOUT_EXERCISE,
-          {'workoutId': workout.id, 'exerciseId': exID, 'time': time});
+    for (var map in res2) {
+      batch.insert(TABLE_WORKOUT, {
+        'id': int.parse(map['id']),
+        'title': map['title'],
+        'description': map['description'],
+        'time': map['time'],
+        'level': map['level'],
+        'image': "assets/images/0.jpg"
+      });
     }
+
+    res = await http.get(
+        'http://192.168.31.119:3000/app/rest/v2/entities/fitnessexpertback_Exercise?view=exercise-view',
+        headers: {"Authorization": 'Bearer ' + token});
+    res2 = json.decode(res.body);
+
+    for (var map in res2) {
+      batch.insert(TABLE_EXERCISE, {
+        'id': int.parse(map['id']),
+        'title': map['title'],
+        'description': map['description'],
+        'type': map['type'],
+        'image': "assets/images/1.jpg"
+      });
+    }
+
+    res = await http.get(
+        'http://192.168.31.119:3000/app/rest/v2/entities/fitnessexpertback_WorkoutExercise?view=workoutExercise-view_1',
+        headers: {"Authorization": 'Bearer ' + token});
+    res2 = json.decode(res.body);
+
+    for (var map in res2) {
+      batch.insert(WORKOUT_EXERCISE, {
+        'workoutId': int.parse(map['workout']['id']),
+        'exerciseId': int.parse(map['exercise']['id']),
+        'time': map['time']
+      });
+    }
+
     await batch.commit(noResult: true);
-    return workout;
   }
 
   Future<List<Exercise>> getExercise() async {
@@ -210,50 +263,46 @@ class DBHelper {
     return exercises;
   }
 
-  Future<List<Exercise>> getUserExercise() async {
-    var dbClient = await db;
-    List<Map> maps =
-        await dbClient.rawQuery("SELECT * FROM $TABLE_EXERCISE WHERE $ID>5");
-    List<Exercise> exercises = [];
-    if (maps.length > 0) {
-      for (int i = 0; i < maps.length; i++) {
-        exercises.add(Exercise.fromMap(maps[i]));
-      }
-    }
-    return exercises;
-  }
-
-  Future<List<Workout>> getUserPlans() async {
-    var dbClient = await db;
-    List<Map> maps =
-        await dbClient.rawQuery("SELECT * FROM $TABLE_WORKOUT WHERE $ID>4");
-    List<Workout> workouts = [];
-    if (maps.length > 0) {
-      for (int i = 0; i < maps.length; i++) {
-        workouts.add(Workout.fromMap(maps[i]));
-      }
-    }
-    return workouts;
-  }
-
   Future<List<ExerciseTime>> getExercisesByWorkoutId(int workoutId) async {
-    var dbClient = await db;
-    List<Map> maps = await dbClient.rawQuery(
-        "SELECT * FROM $WORKOUT_EXERCISE WHERE $WORKOUT_ID=$workoutId");
     List<ExerciseTime> exercises = [];
-    if (maps.length > 0) {
-      for (int i = 0; i < maps.length; i++) {
-        int id = maps[i][EXERCISE_ID];
-        List<Map> map = await dbClient
-            .rawQuery("SELECT * FROM $TABLE_EXERCISE WHERE $ID=$id");
-        ExerciseTime exerciseTime = ExerciseTime(
-            map[0]['image'],
-            map[0]['title'],
-            map[0]['description'],
-            map[0]['id'],
-            map[0]['type'],
-            maps[i]['time']);
-        exercises.add(exerciseTime);
+    String token = await storedRefreshToken;
+    try {
+      var b = {
+        "filter": {
+          "conditions": [
+            {"property": "workout.id", "operator": "=", "value": workoutId}
+          ]
+        },
+        "view": "workoutExercise-view"
+      };
+
+      var res = await http.post(
+          'http://192.168.31.119:3000/app/rest/v2/entities/fitnessexpertback_WorkoutExercise/search',
+          body: jsonEncode(b),
+          headers: {"Authorization": 'Bearer ' + token});
+      var res2 = json.decode(res.body);
+      for (int i = 0; i < res2.length; i++) {
+        exercises.add(ExerciseTime.fromMapCuba(res2[i]));
+      }
+    } catch (e) {
+      var dbClient = await db;
+      List<Map> maps = await dbClient.rawQuery(
+          "SELECT * FROM $WORKOUT_EXERCISE WHERE $WORKOUT_ID=$workoutId");
+
+      if (maps.length > 0) {
+        for (int i = 0; i < maps.length; i++) {
+          int id = maps[i][EXERCISE_ID];
+          List<Map> map = await dbClient
+              .rawQuery("SELECT * FROM $TABLE_EXERCISE WHERE $ID=$id");
+          ExerciseTime exerciseTime = ExerciseTime(
+              map[0]['image'],
+              map[0]['title'],
+              map[0]['description'],
+              map[0]['id'],
+              map[0]['type'],
+              maps[i]['time']);
+          exercises.add(exerciseTime);
+        }
       }
     }
     return exercises;
@@ -261,39 +310,29 @@ class DBHelper {
 
   Future<List<Workout>> getWorkouts() async {
     var dbClient = await db;
-    List<Map> maps = await dbClient.query(TABLE_WORKOUT,
-        columns: [ID, TIME, LEVEL, IMAGE, TITLE, DESCRIPTION]);
+    String token = await storedRefreshToken;
     List<Workout> workouts = [];
-    if (maps.length > 0) {
-      for (int i = 0; i < maps.length; i++) {
-        workouts.add(Workout.fromMap(maps[i]));
+
+    try {
+      var res = await http.get(
+          'http://192.168.31.119:3000/app/rest/v2/entities/fitnessexpertback_Workout?view=workout-view',
+          headers: {"Authorization": 'Bearer ' + token});
+      var res2 = json.decode(res.body);
+      for (int i = 0; i < res2.length; i++) {
+        workouts.add(Workout.fromMapCuba(res2[i]));
+      }
+    } catch (e) {
+      List<Map> maps = await dbClient.query(TABLE_WORKOUT,
+          columns: [ID, TIME, LEVEL, IMAGE, TITLE, DESCRIPTION]);
+
+      if (maps.length > 0) {
+        for (int i = 0; i < maps.length; i++) {
+          workouts.add(Workout.fromMap(maps[i]));
+        }
       }
     }
+
     return workouts;
-  }
-
-  Future<int> deleteExercise(int id) async {
-    var dbClient = await db;
-    return await dbClient
-        .delete(TABLE_EXERCISE, where: '$ID = ?', whereArgs: [id]);
-  }
-
-  Future<int> deleteWorkout(int id) async {
-    var dbClient = await db;
-    return await dbClient
-        .delete(TABLE_WORKOUT, where: '$ID = ?', whereArgs: [id]);
-  }
-
-  Future<int> updateExercise(Exercise exercise) async {
-    var dbClient = await db;
-    return await dbClient.update(TABLE_EXERCISE, exercise.toMap(),
-        where: '$ID = ?', whereArgs: [exercise.id]);
-  }
-
-  Future<int> updateWorkout(Workout workout) async {
-    var dbClient = await db;
-    return await dbClient.update(TABLE_WORKOUT, workout.toMap(),
-        where: '$ID = ?', whereArgs: [workout.id]);
   }
 
   Future close() async {
